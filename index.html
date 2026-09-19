@@ -11,14 +11,16 @@
     main { width:min(100%,715px); background:var(--paper); border:1px solid #ececf2; border-radius:24px; padding:32px; box-shadow:0 18px 55px #35356217; }
     header { display:flex; align-items:start; justify-content:space-between; gap:16px; margin-bottom:18px; }
     h1 { margin:0 0 6px; font-size:28px; letter-spacing:-.04em; }
-    .header-right { width:210px; display:flex; flex-direction:column; gap:8px; }
+    .header-right { width:270px; display:flex; flex-direction:column; gap:8px; }
+    .header-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; }
     .date { color:var(--muted); font-size:14px; }
     .count { flex:none; color:var(--accent); background:#f0efff; border-radius:999px; padding:8px 11px; font-size:13px; font-weight:700; }
     form { display:flex; gap:9px; margin:8px 0 12px; }
     #categoryInput { width:132px; }
     input { width:100%; border:1px solid var(--line); background:#fafafe; border-radius:12px; padding:13px 15px; font:inherit; outline:none; transition:.2s; }
     input:focus { border-color:var(--accent); box-shadow:0 0 0 4px #635bff18; background:#fff; }
-    #searchInput { width:210px; padding:9px 12px; border-radius:10px; font-size:14px; }
+    #searchInput { width:100%; padding:9px 12px; border-radius:10px; font-size:14px; }
+    #syncStatus { min-height:14px; color:var(--muted); text-align:right; font-size:11px; }
     #taskForm input { padding:9px 12px; }
     button { font:inherit; border:0; cursor:pointer; }
     #add { color:#fff; background:var(--accent); border-radius:12px; padding:0 17px; font-weight:700; transition:.2s; }
@@ -83,22 +85,93 @@
   <main>
     <header>
       <h1>今日清單</h1>
-      <div class="header-right"><div class="date" id="date"></div><input id="searchInput" type="search" autocomplete="off" placeholder="搜尋" aria-label="搜尋未完成待辦"></div>
+      <div class="header-right"><div class="header-meta"><div class="date" id="date"></div></div><input id="searchInput" type="search" autocomplete="off" placeholder="搜尋" aria-label="搜尋未完成待辦"><div id="syncStatus">連線中…</div></div>
     </header>
     <div class="toolbar"><div class="filters"><button class="filter active" data-filter="active">未完成</button><button class="filter" data-filter="done">已完成</button><button class="filter" data-filter="all">全部</button><div class="count" id="count">0 項待辦</div></div><div class="toolbar-right"><button id="sortCategory">分類排序</button><button id="clear">清除已完成</button><button id="importCsv">匯入</button><button id="exportCsv">匯出</button><input id="importFile" type="file" accept=".csv,text/csv"></div></div>
     <form id="taskForm"><input id="taskInput" autocomplete="off" maxlength="140" placeholder="想完成什麼？" aria-label="新增待辦事項" /><input id="categoryInput" autocomplete="off" maxlength="30" placeholder="分類" aria-label="分類" /><button id="add">新增</button></form>
     <ul id="list" aria-live="polite"></ul>
   </main>
   <dialog id="importDialog"><h2>匯入待辦</h2><p id="importSummary"></p><div class="preview-wrap"><table class="preview-table"><thead><tr><th>待辦</th><th>分類</th><th>日期</th><th>狀態</th></tr></thead><tbody id="importPreview"></tbody></table></div><div class="dialog-actions"><button id="importCancel">取消</button><button id="importReplace">全部取代</button><button id="importMerge">合併匯入</button></div></dialog>
-  <script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+    import { getAuth, onAuthStateChanged, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+    import { collection, deleteDoc, doc, getDocs, getFirestore, onSnapshot, serverTimestamp, setDoc, writeBatch } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAMHQnMff-Di0JRMASDuC6W9eA5piwC1Ac',
+      authDomain: 'todo-app-sync-12ffe.firebaseapp.com',
+      projectId: 'todo-app-sync-12ffe',
+      storageBucket: 'todo-app-sync-12ffe.firebasestorage.app',
+      messagingSenderId: '963696809768',
+      appId: '1:963696809768:web:c89f4367cfd6115c21a21d'
+    };
+    const firebaseApp = initializeApp(firebaseConfig), auth = getAuth(firebaseApp), db = getFirestore(firebaseApp);
+    const sharedListId = '394c4a84859b8be1dbf95e5a';
+    const sharedTodosRef = collection(db, 'sharedLists', sharedListId, 'todos');
     const storageKey = 'today-todo-v1';
     let todos = JSON.parse(localStorage.getItem(storageKey) || '[]').map(t => ({...t, when:t.when || 'today'}));
     let filter = 'active';
     let editingId = null;
     let categoryAscending = true;
-    const list = document.querySelector('#list'), input = document.querySelector('#taskInput'), categoryInput = document.querySelector('#categoryInput'), searchInput = document.querySelector('#searchInput'), count = document.querySelector('#count');
+    let currentUser = null, stopCloudListener = null, syncReady = false, cloudTodoIds = new Set();
+    const list = document.querySelector('#list'), input = document.querySelector('#taskInput'), categoryInput = document.querySelector('#categoryInput'), searchInput = document.querySelector('#searchInput'), count = document.querySelector('#count'), syncStatus = document.querySelector('#syncStatus');
     document.querySelector('#date').textContent = new Intl.DateTimeFormat('zh-TW', { month:'long', day:'numeric', weekday:'long' }).format(new Date());
-    const save = () => localStorage.setItem(storageKey, JSON.stringify(todos));
+    const saveLocal = () => localStorage.setItem(storageKey, JSON.stringify(todos));
+    const save = () => saveLocal();
+    function cloudTodosFromSnapshot(snapshot) {
+      return snapshot.docs.map(item => {
+        const data = item.data();
+        const order = Number(data.order);
+        return {id:Number(item.id), text:data.text || '', category:data.category || '', done:!!data.done, when:data.when === 'tomorrow' ? 'tomorrow' : 'today', order:Number.isFinite(order) ? order : Number.MAX_SAFE_INTEGER};
+      }).filter(item => Number.isFinite(item.id) && item.text).sort((a, b) => (a.order - b.order) || (b.id - a.id)).map(({order, ...todo}) => todo);
+    }
+    const todoData = todo => ({text:todo.text, category:todo.category || '', done:!!todo.done, when:todo.when === 'tomorrow' ? 'tomorrow' : 'today', updatedAt:serverTimestamp()});
+    function runCloud(operation) {
+      if (!syncReady || !currentUser) return;
+      syncStatus.textContent = '同步中…';
+      operation().catch(showSyncError);
+    }
+    function persistTodo(todo, order) {
+      const data = todoData(todo);
+      if (Number.isFinite(order)) data.order = order;
+      runCloud(() => setDoc(doc(sharedTodosRef, String(todo.id)), data, {merge:true}));
+    }
+    function persistOrders() {
+      if (!syncReady || !currentUser) return;
+      const batch = writeBatch(db);
+      todos.forEach((todo, order) => batch.set(doc(sharedTodosRef, String(todo.id)), {order, updatedAt:serverTimestamp()}, {merge:true}));
+      runCloud(() => batch.commit());
+    }
+    async function writeAllTodos(deleteMissing = false) {
+      const batch = writeBatch(db), localIds = new Set(todos.map(todo => String(todo.id)));
+      todos.forEach((todo, order) => batch.set(doc(sharedTodosRef, String(todo.id)), {...todoData(todo), order}, {merge:true}));
+      if (deleteMissing) cloudTodoIds.forEach(id => { if (!localIds.has(id)) batch.delete(doc(sharedTodosRef, id)); });
+      await batch.commit();
+      cloudTodoIds = localIds;
+    }
+    function showSyncError(error) {
+      console.error(error);
+      syncStatus.textContent = '同步失敗';
+    }
+    async function connectCloud(user) {
+      currentUser = user; syncReady = false;
+      syncStatus.textContent = '連線中…';
+      if (stopCloudListener) stopCloudListener();
+      const firstSnapshot = await getDocs(sharedTodosRef);
+      cloudTodoIds = new Set(firstSnapshot.docs.map(item => item.id));
+      if (firstSnapshot.empty && todos.length) {
+        await writeAllTodos();
+      } else if (!firstSnapshot.empty) {
+        todos = cloudTodosFromSnapshot(firstSnapshot); saveLocal(); render();
+      }
+      stopCloudListener = onSnapshot(sharedTodosRef, snapshot => {
+        cloudTodoIds = new Set(snapshot.docs.map(item => item.id));
+        todos = cloudTodosFromSnapshot(snapshot); saveLocal(); render();
+        syncStatus.textContent = '已同步';
+      }, showSyncError);
+      syncReady = true;
+      syncStatus.textContent = '已同步';
+    }
     function taskHTML(t) {
       const editing = t.id === editingId;
       return `<li class="${t.done ? 'done' : ''}" ${editing ? '' : 'draggable="true"'} data-id="${t.id}"><span class="drag" title="拖曳排序">⠿</span><input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-toggle="${t.id}" aria-label="完成待辦"><div class="task-wrap ${editing ? 'editing' : ''}">${editing ? `<input class="edit-category" maxlength="30" value="${escapeHTML(t.category || '')}" placeholder="分類" aria-label="編輯分類"><input class="edit-task" maxlength="140" value="${escapeHTML(t.text)}" aria-label="編輯待辦">` : `${t.category ? `<span class="category">${escapeHTML(t.category)}</span>` : ''}<div class="task">${escapeHTML(t.text)}</div>`}</div>${t.done ? '' : `<button class="day-toggle" data-day="${t.id}" title="切換今天或明天以後">${t.when === 'tomorrow' ? '明天' : '今天'}</button>`}<button class="delete" data-delete="${t.id}" aria-label="刪除待辦">×</button></li>`;
@@ -174,6 +247,7 @@
     }
     function applyImport(mode) {
       if (!pendingImport.length) return;
+      const replaceCloud = mode === 'replace';
       if (mode === 'replace') {
         if (!confirm('確定要用匯入檔案取代目前全部待辦嗎？')) return;
         todos = pendingImport.map(item => item.todo);
@@ -185,25 +259,27 @@
         todos = coversCurrentList ? merged.map((todo, index) => ({todo, rank:order.get(String(todo.id)) ?? 100000 + index})).sort((a, b) => a.rank - b.rank).map(item => item.todo) : merged;
       }
       pendingImport = []; document.querySelector('#importDialog').close(); save(); render();
+      if (syncReady && currentUser) { syncStatus.textContent = '同步中…'; writeAllTodos(replaceCloud).catch(showSyncError); }
     }
-    document.querySelector('#taskForm').addEventListener('submit', e => { e.preventDefault(); const text = input.value.trim(), category = categoryInput.value.trim(); if (!text) return; todos.push({ id:Date.now(), text, category, done:false, when:'today' }); input.value=''; categoryInput.value=''; save(); render(); input.focus(); });
+    document.querySelector('#taskForm').addEventListener('submit', e => { e.preventDefault(); const text = input.value.trim(), category = categoryInput.value.trim(); if (!text) return; const now = Date.now(), newTodo = { id:now * 1000 + Math.floor(Math.random() * 1000), text, category, done:false, when:'today' }; todos = [newTodo, ...todos]; input.value=''; categoryInput.value=''; save(); render(); persistTodo(newTodo, -now); input.focus(); });
     input.addEventListener('keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); if (input.value.trim()) categoryInput.focus(); });
     categoryInput.addEventListener('keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); document.querySelector('#taskForm').requestSubmit(); });
     searchInput.addEventListener('input', render);
     searchInput.addEventListener('keydown', e => { if (e.key !== 'Escape') return; searchInput.value = ''; render(); searchInput.blur(); });
-    list.addEventListener('change', e => { const id = +e.target.dataset.toggle; if (!id) return; todos = todos.map(t => t.id === id ? {...t, done:e.target.checked} : t); save(); render(); });
+    list.addEventListener('change', e => { const id = +e.target.dataset.toggle; if (!id) return; todos = todos.map(t => t.id === id ? {...t, done:e.target.checked} : t); const changed = todos.find(t => t.id === id); save(); render(); if (changed) persistTodo(changed); });
     function commitEditing(item) {
       if (!item || +item.dataset.id !== editingId) return;
       const original = todos.find(t => t.id === editingId), text = item.querySelector('.edit-task')?.value.trim();
       if (!original) return;
       todos = todos.map(t => t.id === editingId ? {...t, text:text || original.text, category:item.querySelector('.edit-category')?.value.trim() || ''} : t);
-      editingId = null; save(); render();
+      const changed = todos.find(t => t.id === editingId);
+      editingId = null; save(); render(); if (changed) persistTodo(changed);
     }
     list.addEventListener('click', e => {
       const item = e.target.closest('li[data-id]'), id = item ? +item.dataset.id : 0;
       if (!id) return;
-      if (e.target.dataset.delete) { todos = todos.filter(t => t.id !== id); editingId = null; save(); render(); return; }
-      if (e.target.dataset.day) { if (editingId === id) commitEditing(item); todos = todos.map(t => t.id === id ? {...t, when:t.when === 'tomorrow' ? 'today' : 'tomorrow'} : t); editingId = null; save(); render(); return; }
+      if (e.target.dataset.delete) { todos = todos.filter(t => t.id !== id); editingId = null; save(); render(); runCloud(() => deleteDoc(doc(sharedTodosRef, String(id)))); return; }
+      if (e.target.dataset.day) { if (editingId === id) commitEditing(item); todos = todos.map(t => t.id === id ? {...t, when:t.when === 'tomorrow' ? 'today' : 'tomorrow'} : t); const changed = todos.find(t => t.id === id); editingId = null; save(); render(); if (changed) persistTodo(changed); return; }
       if (e.target.closest('.task-wrap') && !editingId) { editingId = id; render(); }
     });
     list.addEventListener('keydown', e => { if (!e.target.matches('.edit-task,.edit-category') || e.key !== 'Enter') return; e.preventDefault(); if (e.target.matches('.edit-category')) e.target.closest('li').querySelector('.edit-task').focus(); else commitEditing(e.target.closest('li')); });
@@ -211,17 +287,24 @@
     let draggedId = null;
     list.addEventListener('dragstart', e => { const item = e.target.closest('li[draggable]'); if (!item) return; draggedId = +item.dataset.id; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
     list.addEventListener('dragover', e => { const item = e.target.closest('li[draggable]'); if (!item || +item.dataset.id === draggedId) return; e.preventDefault(); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); item.classList.add('drag-over'); });
-    list.addEventListener('drop', e => { const item = e.target.closest('li[draggable]'); if (!item || +item.dataset.id === draggedId) return; e.preventDefault(); const from = todos.findIndex(t => t.id === draggedId), to = todos.findIndex(t => t.id === +item.dataset.id); if (from < 0 || to < 0) return; const targetWhen = todos[to].when || 'today', [moved] = todos.splice(from, 1); if (filter === 'active') moved.when = targetWhen; const insertAt = todos.findIndex(t => t.id === +item.dataset.id); todos.splice(insertAt < 0 ? todos.length : insertAt, 0, moved); save(); render(); });
+    list.addEventListener('drop', e => { const item = e.target.closest('li[draggable]'); if (!item || +item.dataset.id === draggedId) return; e.preventDefault(); const from = todos.findIndex(t => t.id === draggedId), to = todos.findIndex(t => t.id === +item.dataset.id); if (from < 0 || to < 0) return; const targetWhen = todos[to].when || 'today', [moved] = todos.splice(from, 1); if (filter === 'active') moved.when = targetWhen; const insertAt = todos.findIndex(t => t.id === +item.dataset.id); todos.splice(insertAt < 0 ? todos.length : insertAt, 0, moved); save(); render(); persistTodo(moved); persistOrders(); });
     list.addEventListener('dragend', () => { draggedId = null; document.querySelectorAll('.dragging,.drag-over').forEach(el => el.classList.remove('dragging','drag-over')); });
     document.querySelector('.filters').addEventListener('click', e => { const button = e.target.closest('[data-filter]'); if (!button) return; filter = button.dataset.filter; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b === button)); render(); });
-    document.querySelector('#sortCategory').addEventListener('click', e => { todos = todos.map((todo, index) => ({todo, index})).sort((a, b) => { const ac = (a.todo.category || '').trim(), bc = (b.todo.category || '').trim(); if (!ac && !bc) return a.index - b.index; if (!ac) return 1; if (!bc) return -1; const compared = ac.localeCompare(bc, 'zh-Hant', {numeric:true, sensitivity:'base'}); return (categoryAscending ? compared : -compared) || a.index - b.index; }).map(item => item.todo); e.currentTarget.textContent = categoryAscending ? '分類 ↑' : '分類 ↓'; categoryAscending = !categoryAscending; editingId = null; save(); render(); });
+    document.querySelector('#sortCategory').addEventListener('click', e => { todos = todos.map((todo, index) => ({todo, index})).sort((a, b) => { const ac = (a.todo.category || '').trim(), bc = (b.todo.category || '').trim(); if (!ac && !bc) return a.index - b.index; if (!ac) return 1; if (!bc) return -1; const compared = ac.localeCompare(bc, 'zh-Hant', {numeric:true, sensitivity:'base'}); return (categoryAscending ? compared : -compared) || a.index - b.index; }).map(item => item.todo); e.currentTarget.textContent = categoryAscending ? '分類 ↑' : '分類 ↓'; categoryAscending = !categoryAscending; editingId = null; save(); render(); persistOrders(); });
     document.querySelector('#exportCsv').addEventListener('click', exportCSV);
     document.querySelector('#importCsv').addEventListener('click', () => { const picker = document.querySelector('#importFile'); picker.value = ''; picker.click(); });
     document.querySelector('#importFile').addEventListener('change', async e => { const file = e.target.files[0]; if (!file) return; try { await prepareImport(file); } catch (error) { alert(error.message || '無法讀取這份 CSV。'); } });
     document.querySelector('#importMerge').addEventListener('click', () => applyImport('merge'));
     document.querySelector('#importReplace').addEventListener('click', () => applyImport('replace'));
     document.querySelector('#importCancel').addEventListener('click', () => { pendingImport = []; document.querySelector('#importDialog').close(); });
-    document.querySelector('#clear').addEventListener('click', () => { todos = todos.filter(t => !t.done); save(); render(); });
+    document.querySelector('#clear').addEventListener('click', () => { const removedIds = todos.filter(t => t.done).map(t => t.id); todos = todos.filter(t => !t.done); save(); render(); if (syncReady && currentUser && removedIds.length) { const batch = writeBatch(db); removedIds.forEach(id => batch.delete(doc(sharedTodosRef, String(id)))); runCloud(() => batch.commit()); } });
+    onAuthStateChanged(auth, user => {
+      if (user) { connectCloud(user).catch(showSyncError); return; }
+      if (stopCloudListener) { stopCloudListener(); stopCloudListener = null; }
+      currentUser = null; syncReady = false; cloudTodoIds = new Set();
+      syncStatus.textContent = '連線中…';
+      signInAnonymously(auth).catch(showSyncError);
+    });
     render();
   </script>
 </body>
