@@ -5,64 +5,72 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>今日清單</title>
   <style>
-    :root { --ink:#202633; --muted:#7c8495; --line:#e8eaf0; --paper:#fff; --bg:#f7f7fb; --accent:#635bff; --danger:#d84c60; }
+    :root { --ink:#17213b; --muted:#778097; --line:#e6e9f1; --paper:#fff; --bg:#f7f7fc; --accent:#635bff; --accent-soft:#f0efff; --danger:#d84c60; }
     * { box-sizing:border-box; }
-    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:28px 16px; color:var(--ink); background:radial-gradient(circle at 15% 10%,#e7e8ff 0,transparent 28rem),var(--bg); font-family:Inter,"Noto Sans TC","PingFang TC",system-ui,sans-serif; }
-    main { width:min(100%,715px); background:var(--paper); border:1px solid #ececf2; border-radius:24px; padding:32px; box-shadow:0 18px 55px #35356217; }
-    header { display:flex; align-items:start; justify-content:space-between; gap:16px; margin-bottom:18px; }
-    h1 { margin:0 0 6px; font-size:28px; letter-spacing:-.04em; }
-    .header-right { width:270px; display:flex; flex-direction:column; gap:8px; }
-    .header-meta { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; padding:26px 16px; color:var(--ink); background:radial-gradient(circle at 15% 10%,#e7e8ff 0,transparent 28rem),var(--bg); font-family:Inter,"Noto Sans TC","PingFang TC",system-ui,sans-serif; }
+    main { width:min(100%,1180px); min-height:680px; background:var(--paper); border:1px solid #ececf2; border-radius:24px; padding:32px 34px 38px; box-shadow:0 18px 55px #35356217; }
+    header { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; margin-bottom:16px; }
+    h1 { margin:0; font-size:30px; line-height:1.2; letter-spacing:-.04em; }
+    .header-right { width:310px; display:flex; flex-direction:column; gap:8px; }
+    .header-meta { display:flex; align-items:center; justify-content:flex-end; gap:10px; }
     .date { color:var(--muted); font-size:14px; }
-    .count { flex:none; color:var(--accent); background:#f0efff; border-radius:999px; padding:8px 11px; font-size:13px; font-weight:700; }
-    form { display:flex; gap:9px; margin:8px 0 12px; }
-    #categoryInput { width:132px; }
-    input { width:100%; border:1px solid var(--line); background:#fafafe; border-radius:12px; padding:13px 15px; font:inherit; outline:none; transition:.2s; }
+    .count { flex:none; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:8px 11px; font-size:13px; font-weight:700; }
+    input { width:100%; border:1px solid var(--line); background:#fafafe; border-radius:12px; padding:13px 15px; font:inherit; outline:none; transition:border-color .18s,box-shadow .18s,background .18s; }
     input:focus { border-color:var(--accent); box-shadow:0 0 0 4px #635bff18; background:#fff; }
     #searchInput { width:100%; padding:9px 12px; border-radius:10px; font-size:14px; }
     #syncStatus { min-height:14px; color:var(--muted); text-align:right; font-size:11px; }
-    #taskForm input { padding:9px 12px; }
     button { font:inherit; border:0; cursor:pointer; }
-    #add { color:#fff; background:var(--accent); border-radius:12px; padding:0 17px; font-weight:700; transition:.2s; }
-    #add:hover { transform:translateY(-1px); background:#554ce8; }
-    .toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-    .toolbar-right { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:9px; }
-    .filters { display:flex; align-items:center; gap:5px; }
+    .toolbar { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:10px; }
+    .toolbar-right,.filters { display:flex; align-items:center; gap:7px; }
+    .toolbar-right { justify-content:flex-end; flex-wrap:wrap; }
     .filter { background:transparent; color:var(--muted); padding:7px 10px; border-radius:8px; font-size:13px; }
-    .filter.active { background:#f0efff; color:var(--accent); font-weight:700; }
+    .filter.active { background:var(--accent-soft); color:var(--accent); font-weight:700; }
     #clear { background:transparent; color:var(--muted); padding:7px 3px; font-size:13px; }
     #clear:hover { color:var(--danger); }
-    #sortCategory, #exportCsv, #importCsv { background:#f6f6fa; color:var(--muted); padding:7px 9px; border-radius:8px; font-size:13px; }
-    #sortCategory:hover, #exportCsv:hover, #importCsv:hover { color:var(--accent); background:#f0efff; }
+    #sortCategory,#exportCsv,#importCsv { background:#f6f6fa; color:var(--muted); padding:7px 9px; border-radius:8px; font-size:13px; }
+    #sortCategory:hover,#exportCsv:hover,#importCsv:hover { color:var(--accent); background:var(--accent-soft); }
     #importFile { display:none; }
-    ul { list-style:none; padding:0; margin:0; }
-    li { display:flex; align-items:center; gap:12px; padding:7px 4px; border-bottom:1px solid var(--line); animation:in .22s ease-out; }
-    li[draggable] { cursor:grab; }
-    li.dragging { opacity:.42; }
-    li.drag-over { border-top:2px solid var(--accent); }
-    li:last-child { border-bottom:0; }
-    .check { appearance:none; margin:0; width:21px; height:21px; border:2px solid #cfd3de; border-radius:7px; cursor:pointer; display:grid; place-content:center; }
+    #taskForm { width:min(100%,715px); display:grid; grid-template-columns:minmax(0,1fr) 132px 84px; gap:10px; margin:8px 0 26px; }
+    #taskForm input { padding:10px 13px; }
+    #add { color:#fff; background:var(--accent); border-radius:12px; padding:0 17px; font-size:14px; font-weight:700; transition:.18s; }
+    #add:hover { transform:translateY(-1px); background:#554ce8; }
+    .lane-switcher { display:none; }
+    .board { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .lane { min-width:0; padding:0 22px; }
+    .lane:first-child { padding-left:0; }
+    .lane:last-child { padding-right:0; }
+    .lane + .lane { border-left:1px solid var(--line); }
+    .lane.drop-lane { background:#faf9ff; box-shadow:inset 0 0 0 1px #dedbff; }
+    .lane-heading { display:flex; align-items:baseline; gap:8px; margin:0 0 10px; font-size:22px; line-height:1.3; letter-spacing:-.02em; }
+    .lane-count { color:var(--muted); font-size:15px; font-weight:600; }
+    .task-list { list-style:none; padding:0; margin:0; }
+    .task-row { position:relative; display:grid; grid-template-columns:14px 21px minmax(0,1fr) 50px; align-items:center; gap:6px; min-height:41px; padding:4px 2px; border-bottom:1px solid var(--line); animation:in .18s ease-out; }
+    .task-row.dragging { opacity:.38; }
+    .task-row.drag-over { box-shadow:inset 0 2px 0 var(--accent); }
+    .drag { color:#aeb4c3; letter-spacing:-2px; font-size:16px; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+    .drag[draggable="true"] { cursor:grab; }
+    .check { appearance:none; margin:0; width:21px; height:21px; padding:0; border:2px solid #cbd1df; border-radius:7px; background:#fff; cursor:pointer; display:grid; place-content:center; }
     .check:checked { background:var(--accent); border-color:var(--accent); }
-    .check:checked::after { content:"✓"; color:white; font-size:14px; font-weight:800; line-height:1; }
-    .task-wrap { display:flex; align-items:center; gap:8px; flex:1; min-width:0; }
+    .check:checked::after { content:"✓"; color:#fff; font-size:14px; font-weight:800; line-height:1; }
+    .task-wrap { display:flex; align-items:center; gap:6px; min-width:0; overflow:hidden; }
     .task-wrap:not(.editing) { cursor:text; }
-    .task { flex:1; min-width:0; font-size:15px; overflow-wrap:anywhere; }
-    .category { flex:none; color:#625bcf; background:#f0efff; padding:3px 7px; border-radius:6px; font-size:15px; }
-    .task-wrap.editing { gap:7px; }
-    .edit-category { width:115px; flex:none; }
-    .edit-task { min-width:0; flex:1; }
-    .drag { color:#b3b7c2; letter-spacing:-2px; font-size:17px; user-select:none; }
-    .day-toggle { flex:none; color:var(--accent); background:#f0efff; border-radius:8px; padding:6px 8px; font-size:12px; font-weight:700; }
+    .task { flex:1; min-width:0; overflow:hidden; color:var(--ink); font-size:14px; line-height:1.42; text-overflow:ellipsis; white-space:nowrap; }
+    .category { flex:none; max-width:62px; overflow:hidden; color:#625bcf; background:var(--accent-soft); padding:3px 6px; border-radius:6px; font-size:11px; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+    .task-wrap.editing { gap:6px; }
+    .edit-task { min-width:0; flex:1; padding:6px 8px; border-radius:8px; font-size:13px; }
+    .edit-category { width:78px; flex:none; padding:6px 8px; border-radius:8px; font-size:12px; }
+    .day-toggle { width:50px; height:27px; color:var(--accent); background:var(--accent-soft); border-radius:8px; padding:0; font-size:11px; font-weight:700; line-height:1; }
     .day-toggle:hover { background:#e5e3ff; }
     .done .task { color:var(--muted); text-decoration:line-through; }
-    .delete { opacity:0; color:#a2a8b5; background:transparent; font-size:20px; padding:3px 7px; line-height:1; transition:.15s; }
-    li:hover .delete, .delete:focus { opacity:1; }
+    .delete { position:absolute; right:54px; z-index:2; width:18px; height:25px; opacity:0; color:#a2a8b5; background:#fff; border-radius:6px; font-size:18px; padding:0; line-height:1; transition:.15s; }
+    .task-row:hover .delete,.delete:focus-visible { opacity:1; }
     .delete:hover { color:var(--danger); }
-    .empty { padding:35px 8px 25px; text-align:center; color:var(--muted); font-size:14px; }
-    .section-title { border:0; padding:18px 4px 7px; color:var(--muted); font-size:12px; font-weight:800; letter-spacing:.08em; }
-    .section-title:first-child { padding-top:8px; }
-    .section-empty { border:0; padding:13px 4px 18px; color:#a2a8b5; font-size:13px; }
-    dialog { width:min(90vw,390px); border:0; border-radius:18px; padding:22px; color:var(--ink); box-shadow:0 22px 70px #25253d35; }
+    .touch-ghost { position:fixed; z-index:9999; pointer-events:none; margin:0; opacity:.9; background:#fff; border:1px solid #dcd9ff; border-radius:10px; box-shadow:0 12px 34px #29294a2b; }
+    .lane-tab.drop-target { color:var(--accent); background:#e6e3ff; box-shadow:inset 0 0 0 1px #cbc6ff; }
+    .tomorrow-title { margin:23px 0 7px; color:#59647c; font-size:15px; font-weight:800; }
+    .lane-empty { padding:16px 2px 20px; color:#a2a8b5; font-size:13px; }
+    .search-empty { grid-column:1/-1; padding:42px 8px 28px; text-align:center; color:var(--muted); font-size:14px; }
+    dialog { width:min(92vw,560px); border:0; border-radius:18px; padding:22px; color:var(--ink); box-shadow:0 22px 70px #25253d35; }
     dialog::backdrop { background:#27273855; backdrop-filter:blur(2px); }
     dialog h2 { margin:0 0 8px; font-size:19px; }
     dialog p { margin:0; color:var(--muted); font-size:14px; line-height:1.6; }
@@ -71,14 +79,52 @@
     #importMerge { color:#fff; background:var(--accent); }
     #importReplace { color:var(--danger); background:#fff0f2; }
     #importCancel { color:var(--muted); background:#f1f2f6; }
-    .preview-wrap { max-height:230px; overflow:auto; margin-top:14px; border:1px solid var(--line); border-radius:10px; }
+    .preview-wrap { max-height:260px; overflow:auto; margin-top:14px; border:1px solid var(--line); border-radius:10px; }
     .preview-table { width:100%; border-collapse:collapse; font-size:12px; }
-    .preview-table th, .preview-table td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+    .preview-table th,.preview-table td { padding:7px 9px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
     .preview-table th { position:sticky; top:0; color:var(--muted); background:#fafafe; }
     .preview-table tr:last-child td { border-bottom:0; }
-    .preview-table td:first-child { max-width:240px; overflow:hidden; text-overflow:ellipsis; }
-    @keyframes in { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:none; } }
-    @media (max-width:480px) { main { padding:24px 19px; border-radius:20px; } header { margin-bottom:16px; flex-wrap:wrap; } .header-right, #searchInput { width:100%; } .toolbar { align-items:start; flex-wrap:wrap; gap:8px; } .filters { flex-wrap:wrap; } .toolbar-right { width:100%; justify-content:flex-end; } form { flex-wrap:wrap; } #categoryInput { width:100%; } }
+    .preview-table td:first-child { max-width:210px; overflow:hidden; text-overflow:ellipsis; }
+    @keyframes in { from { opacity:0; transform:translateY(4px); } to { opacity:1; transform:none; } }
+    @media (max-width:980px) {
+      main { padding:28px 24px 34px; }
+      .lane { padding:0 14px; }
+      .task-row { grid-template-columns:12px 20px minmax(0,1fr) 50px; gap:6px; }
+    }
+    @media (max-width:760px) {
+      body { padding:12px; place-items:start center; }
+      main { width:min(100%,720px); min-height:calc(100vh - 24px); padding:24px 20px 30px; border-radius:20px; }
+      header { flex-wrap:wrap; margin-bottom:14px; }
+      .header-right { width:100%; }
+      .header-meta { justify-content:flex-start; }
+      #syncStatus { text-align:left; }
+      .toolbar { align-items:flex-start; flex-wrap:wrap; gap:8px; }
+      .toolbar-right { width:100%; justify-content:flex-end; }
+      #taskForm { width:100%; grid-template-columns:minmax(0,1fr) 92px 58px; gap:7px; margin-bottom:17px; }
+      #taskForm input { min-width:0; padding:9px 10px; }
+      #add { padding:0 9px; }
+      .lane-switcher { display:flex; gap:5px; margin-bottom:17px; overflow-x:auto; }
+      .lane-tab { flex:1; white-space:nowrap; color:var(--muted); background:transparent; border-radius:8px; padding:8px 9px; font-size:13px; }
+      .lane-tab.active { color:var(--accent); background:var(--accent-soft); font-weight:750; }
+      .board { display:block; }
+      .lane { display:none; padding:0; border:0!important; }
+      .lane.mobile-active { display:block; }
+      .lane-heading { display:none; }
+      .task-row { grid-template-columns:13px 21px minmax(0,1fr) 50px; gap:6px; }
+    }
+    @media (max-width:460px) {
+      body { padding:0; }
+      main { min-height:100vh; padding:21px 15px 28px; border-radius:0; }
+      h1 { font-size:27px; }
+      .filters { gap:2px; }
+      .filter { padding:7px 8px; }
+      .count { padding:7px 9px; }
+      .toolbar-right { gap:5px; }
+      #sortCategory,#exportCsv,#importCsv { padding:7px; }
+      .task-row { grid-template-columns:11px 20px minmax(0,1fr) 48px; gap:5px; }
+      .day-toggle { width:48px; }
+      .category { font-size:11px; }
+    }
   </style>
 </head>
 <body>
@@ -89,9 +135,10 @@
     </header>
     <div class="toolbar"><div class="filters"><button class="filter active" data-filter="active">未完成</button><button class="filter" data-filter="done">已完成</button><button class="filter" data-filter="all">全部</button><div class="count" id="count">0 項待辦</div></div><div class="toolbar-right"><button id="sortCategory">分類排序</button><button id="clear">清除已完成</button><button id="importCsv">匯入</button><button id="exportCsv">匯出</button><input id="importFile" type="file" accept=".csv,text/csv"></div></div>
     <form id="taskForm"><input id="taskInput" autocomplete="off" maxlength="140" placeholder="想完成什麼？" aria-label="新增待辦事項" /><input id="categoryInput" autocomplete="off" maxlength="30" placeholder="分類" aria-label="分類" /><button id="add">新增</button></form>
-    <ul id="list" aria-live="polite"></ul>
+    <div class="lane-switcher" id="laneSwitcher" aria-label="切換欄位"></div>
+    <div class="board" id="board" aria-live="polite"></div>
   </main>
-  <dialog id="importDialog"><h2>匯入待辦</h2><p id="importSummary"></p><div class="preview-wrap"><table class="preview-table"><thead><tr><th>待辦</th><th>分類</th><th>日期</th><th>狀態</th></tr></thead><tbody id="importPreview"></tbody></table></div><div class="dialog-actions"><button id="importCancel">取消</button><button id="importReplace">全部取代</button><button id="importMerge">合併匯入</button></div></dialog>
+  <dialog id="importDialog"><h2>匯入待辦</h2><p id="importSummary"></p><div class="preview-wrap"><table class="preview-table"><thead><tr><th>待辦</th><th>欄位</th><th>分類</th><th>到期日</th><th>狀態</th></tr></thead><tbody id="importPreview"></tbody></table></div><div class="dialog-actions"><button id="importCancel">取消</button><button id="importReplace">全部取代</button><button id="importMerge">合併匯入</button></div></dialog>
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
     import { getAuth, onAuthStateChanged, signInAnonymously } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
@@ -109,27 +156,74 @@
     const sharedListId = '394c4a84859b8be1dbf95e5a';
     const sharedTodosRef = collection(db, 'sharedLists', sharedListId, 'todos');
     const storageKey = 'today-todo-v1';
-    let todos = JSON.parse(localStorage.getItem(storageKey) || '[]').map(t => ({...t, when:t.when || 'today'}));
-    let filter = 'active';
-    let editingId = null;
-    let categoryAscending = true;
+    const lanes = [
+      {id:'today', label:'待辦'},
+      {id:'reply', label:'待回信'},
+      {id:'waiting', label:'等回覆'}
+    ];
+    const laneIds = new Set(lanes.map(lane => lane.id));
+    const laneLabel = Object.fromEntries(lanes.map(lane => [lane.id, lane.label]));
+    const board = document.querySelector('#board'), laneSwitcher = document.querySelector('#laneSwitcher');
+    const input = document.querySelector('#taskInput'), categoryInput = document.querySelector('#categoryInput'), searchInput = document.querySelector('#searchInput');
+    const count = document.querySelector('#count'), syncStatus = document.querySelector('#syncStatus');
+    document.querySelector('#date').textContent = new Intl.DateTimeFormat('zh-TW', {month:'long', day:'numeric', weekday:'long'}).format(new Date());
+
+    const isoForOffset = (days = 0) => {
+      const date = new Date();
+      date.setHours(12, 0, 0, 0);
+      date.setDate(date.getDate() + days);
+      const year = date.getFullYear(), month = String(date.getMonth() + 1).padStart(2, '0'), day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    const isISODate = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || ''));
+    const whenFromDueDate = dueDate => dueDate > isoForOffset(0) ? 'tomorrow' : 'today';
+    function normalizeTodo(todo) {
+      const fallbackWhen = todo?.when === 'tomorrow' ? 'tomorrow' : 'today';
+      const dueDate = isISODate(todo?.dueDate) ? todo.dueDate : isoForOffset(fallbackWhen === 'tomorrow' ? 1 : 0);
+      return {
+        id:Number(todo?.id),
+        text:String(todo?.text || ''),
+        category:String(todo?.category || ''),
+        done:!!todo?.done,
+        lane:laneIds.has(todo?.lane) ? todo.lane : 'today',
+        dueDate,
+        when:whenFromDueDate(dueDate)
+      };
+    }
+    let storedTodos = [];
+    try { storedTodos = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (error) { console.warn('無法讀取本機待辦資料', error); }
+    let todos = Array.isArray(storedTodos) ? storedTodos.map(normalizeTodo).filter(todo => Number.isFinite(todo.id) && todo.text) : [];
+    let filter = 'active', editingId = null, categoryAscending = true, mobileLane = 'today', draggedId = null;
+    let touchDrag = null, touchTimer = null;
     let currentUser = null, stopCloudListener = null, syncReady = false, cloudTodoIds = new Set();
-    const list = document.querySelector('#list'), input = document.querySelector('#taskInput'), categoryInput = document.querySelector('#categoryInput'), searchInput = document.querySelector('#searchInput'), count = document.querySelector('#count'), syncStatus = document.querySelector('#syncStatus');
-    document.querySelector('#date').textContent = new Intl.DateTimeFormat('zh-TW', { month:'long', day:'numeric', weekday:'long' }).format(new Date());
     const saveLocal = () => localStorage.setItem(storageKey, JSON.stringify(todos));
     const save = () => saveLocal();
+
     function cloudTodosFromSnapshot(snapshot) {
       return snapshot.docs.map(item => {
-        const data = item.data();
-        const order = Number(data.order);
-        return {id:Number(item.id), text:data.text || '', category:data.category || '', done:!!data.done, when:data.when === 'tomorrow' ? 'tomorrow' : 'today', order:Number.isFinite(order) ? order : Number.MAX_SAFE_INTEGER};
-      }).filter(item => Number.isFinite(item.id) && item.text).sort((a, b) => (a.order - b.order) || (b.id - a.id)).map(({order, ...todo}) => todo);
+        const data = item.data(), order = Number(data.order);
+        return {...normalizeTodo({id:Number(item.id), ...data}), order:Number.isFinite(order) ? order : Number.MAX_SAFE_INTEGER};
+      }).filter(item => Number.isFinite(item.id) && item.text)
+        .sort((a, b) => (a.order - b.order) || (b.id - a.id))
+        .map(({order, ...todo}) => todo);
     }
-    const todoData = todo => ({text:todo.text, category:todo.category || '', done:!!todo.done, when:todo.when === 'tomorrow' ? 'tomorrow' : 'today', updatedAt:serverTimestamp()});
+    const todoData = todo => ({
+      text:todo.text,
+      category:todo.category || '',
+      done:!!todo.done,
+      lane:laneIds.has(todo.lane) ? todo.lane : 'today',
+      dueDate:isISODate(todo.dueDate) ? todo.dueDate : isoForOffset(0),
+      when:todo.when === 'tomorrow' ? 'tomorrow' : 'today',
+      updatedAt:serverTimestamp()
+    });
+    function showSyncError(error) {
+      console.error(error);
+      syncStatus.textContent = '同步失敗';
+    }
     function runCloud(operation) {
       if (!syncReady || !currentUser) return;
       syncStatus.textContent = '同步中…';
-      operation().catch(showSyncError);
+      Promise.resolve().then(operation).then(() => { if (currentUser) syncStatus.textContent = '已同步'; }).catch(showSyncError);
     }
     function persistTodo(todo, order) {
       const data = todoData(todo);
@@ -149,10 +243,6 @@
       await batch.commit();
       cloudTodoIds = localIds;
     }
-    function showSyncError(error) {
-      console.error(error);
-      syncStatus.textContent = '同步失敗';
-    }
     async function connectCloud(user) {
       currentUser = user; syncReady = false;
       syncStatus.textContent = '連線中…';
@@ -162,7 +252,9 @@
       if (firstSnapshot.empty && todos.length) {
         await writeAllTodos();
       } else if (!firstSnapshot.empty) {
+        const needsMigration = firstSnapshot.docs.some(item => !laneIds.has(item.data().lane) || !isISODate(item.data().dueDate));
         todos = cloudTodosFromSnapshot(firstSnapshot); saveLocal(); render();
+        if (needsMigration) await writeAllTodos();
       }
       stopCloudListener = onSnapshot(sharedTodosRef, snapshot => {
         cloudTodoIds = new Set(snapshot.docs.map(item => item.id));
@@ -172,36 +264,45 @@
       syncReady = true;
       syncStatus.textContent = '已同步';
     }
-    function taskHTML(t) {
-      const editing = t.id === editingId;
-      return `<li class="${t.done ? 'done' : ''}" ${editing ? '' : 'draggable="true"'} data-id="${t.id}"><span class="drag" title="拖曳排序">⠿</span><input class="check" type="checkbox" ${t.done ? 'checked' : ''} data-toggle="${t.id}" aria-label="完成待辦"><div class="task-wrap ${editing ? 'editing' : ''}">${editing ? `<input class="edit-category" maxlength="30" value="${escapeHTML(t.category || '')}" placeholder="分類" aria-label="編輯分類"><input class="edit-task" maxlength="140" value="${escapeHTML(t.text)}" aria-label="編輯待辦">` : `${t.category ? `<span class="category">${escapeHTML(t.category)}</span>` : ''}<div class="task">${escapeHTML(t.text)}</div>`}</div>${t.done ? '' : `<button class="day-toggle" data-day="${t.id}" title="切換今天或明天以後">${t.when === 'tomorrow' ? '明天' : '今天'}</button>`}<button class="delete" data-delete="${t.id}" aria-label="刪除待辦">×</button></li>`;
+
+    const escapeHTML = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
+    function taskHTML(todo) {
+      const editing = todo.id === editingId;
+      const content = editing
+        ? `<input class="edit-task" maxlength="140" value="${escapeHTML(todo.text)}" aria-label="編輯待辦"><input class="edit-category" maxlength="30" value="${escapeHTML(todo.category)}" placeholder="分類" aria-label="編輯分類">`
+        : `<div class="task" title="${escapeHTML(todo.text)}">${escapeHTML(todo.text)}</div>${todo.category ? `<span class="category" title="${escapeHTML(todo.category)}">${escapeHTML(todo.category)}</span>` : ''}`;
+      return `<li class="task-row ${todo.done ? 'done' : ''}" data-id="${todo.id}" data-lane="${todo.lane}" data-when="${todo.when}"><span class="drag" ${editing ? '' : 'draggable="true"'} title="拖曳排序或移動欄位；手機請長按">⠿</span><input class="check" type="checkbox" ${todo.done ? 'checked' : ''} data-toggle="${todo.id}" aria-label="完成待辦"><div class="task-wrap ${editing ? 'editing' : ''}">${content}</div><button class="delete" data-delete="${todo.id}" aria-label="刪除待辦">×</button><button class="day-toggle" data-day="${todo.id}" title="點一下切換今天或明天">${todo.when === 'tomorrow' ? '明天' : '今天'}</button></li>`;
     }
     function render() {
-      const shown = todos.filter(t => filter === 'all' || (filter === 'active' ? !t.done : t.done));
       const query = searchInput.value.trim().toLocaleLowerCase('zh-Hant');
-      const left = todos.filter(t => !t.done).length;
-      count.textContent = `${left} 項待辦`;
-      if (query) {
-        const results = todos.filter(t => !t.done && `${t.category || ''} ${t.text}`.toLocaleLowerCase('zh-Hant').includes(query));
-        list.innerHTML = results.length ? results.map(taskHTML).join('') : '<li class="empty">找不到符合的未完成待辦</li>';
-      } else if (filter === 'active') {
-        const today = shown.filter(t => t.when !== 'tomorrow'), tomorrow = shown.filter(t => t.when === 'tomorrow');
-        list.innerHTML = `<li class="section-title">今天</li>${today.length ? today.map(taskHTML).join('') : '<li class="section-empty">今天沒有待辦</li>'}<li class="section-title">明天以後</li>${tomorrow.length ? tomorrow.map(taskHTML).join('') : '<li class="section-empty">明天以後沒有待辦</li>'}`;
-      } else {
-        list.innerHTML = shown.length ? shown.map(taskHTML).join('') : `<li class="empty">${filter === 'done' ? '還沒有完成的事項' : '清單是空的，新增一件小事開始吧。'}</li>`;
-      }
-      if (editingId) list.querySelector('.edit-task')?.focus();
+      let shown = todos.filter(todo => filter === 'all' || (filter === 'active' ? !todo.done : todo.done));
+      if (query) shown = todos.filter(todo => !todo.done && `${todo.category} ${todo.text}`.toLocaleLowerCase('zh-Hant').includes(query));
+      count.textContent = `${todos.filter(todo => !todo.done).length} 項待辦`;
+
+      board.innerHTML = lanes.map(lane => {
+        const laneTodos = shown.filter(todo => todo.lane === lane.id);
+        const current = laneTodos.filter(todo => todo.when !== 'tomorrow');
+        const tomorrow = laneTodos.filter(todo => todo.when === 'tomorrow');
+        const currentHTML = current.length ? current.map(taskHTML).join('') : `<div class="lane-empty">${query ? '沒有符合的待辦' : '目前沒有項目'}</div>`;
+        const tomorrowHTML = tomorrow.length ? tomorrow.map(taskHTML).join('') : '<div class="lane-empty">明天沒有項目</div>';
+        return `<section class="lane ${mobileLane === lane.id ? 'mobile-active' : ''}" data-lane="${lane.id}"><h2 class="lane-heading">${lane.label} <span class="lane-count">(${laneTodos.length})</span></h2><ul class="task-list">${currentHTML}</ul><h3 class="tomorrow-title">明天</h3><ul class="task-list">${tomorrowHTML}</ul></section>`;
+      }).join('');
+      laneSwitcher.innerHTML = lanes.map(lane => {
+        const laneCount = shown.filter(todo => todo.lane === lane.id).length;
+        return `<button class="lane-tab ${mobileLane === lane.id ? 'active' : ''}" data-mobile-lane="${lane.id}">${lane.label} (${laneCount})</button>`;
+      }).join('');
+      if (editingId) board.querySelector('.edit-task')?.focus();
     }
-    const escapeHTML = s => s.replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
     const csvCell = value => { let text = String(value ?? ''); if (/^[=+\-@]/.test(text)) text = `'${text}`; return `"${text.replace(/"/g, '""')}"`; };
     const cleanCsvValue = value => String(value ?? '').replace(/^'(?=[=+\-@])/, '');
     function parseCSV(text) {
       const rows = [], row = []; let cell = '', quoted = false;
       text = text.replace(/^\uFEFF/, '');
-      for (let i = 0; i < text.length; i++) {
-        const char = text[i];
+      for (let index = 0; index < text.length; index++) {
+        const char = text[index];
         if (quoted) {
-          if (char === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+          if (char === '"' && text[index + 1] === '"') { cell += '"'; index++; }
           else if (char === '"') quoted = false;
           else cell += char;
         } else if (char === '"' && cell === '') quoted = true;
@@ -213,13 +314,19 @@
       return rows.filter(fields => fields.some(value => value.trim() !== ''));
     }
     function exportCSV() {
-      const headers = ['ID','待辦','分類','日期','狀態','排序'];
-      const rows = todos.map((t, index) => [t.id, t.text, t.category || '', t.when === 'tomorrow' ? '明天以後' : '今天', t.done ? '已完成' : '未完成', index + 1]);
+      const headers = ['ID','待辦','分類','欄位','到期日','日期','狀態','排序'];
+      const rows = todos.map((todo, index) => [todo.id, todo.text, todo.category, laneLabel[todo.lane], todo.dueDate, todo.when === 'tomorrow' ? '明天' : '今日', todo.done ? '已完成' : '未完成', index + 1]);
       const csv = '\uFEFF' + [headers, ...rows].map(row => row.map(csvCell).join(',')).join('\r\n');
       const url = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8'}));
       const link = document.createElement('a');
-      link.href = url; link.download = `待辦清單_${new Intl.DateTimeFormat('sv-SE').format(new Date())}.csv`;
+      link.href = url; link.download = `待辦清單_${isoForOffset(0)}.csv`;
       document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+    function parseImportedDate(raw, legacyWhen) {
+      if (isISODate(raw)) return raw;
+      const match = String(raw || '').match(/^(\d{1,2})[\/.\-](\d{1,2})$/);
+      if (match) return `${new Date().getFullYear()}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`;
+      return isoForOffset(legacyWhen === 'tomorrow' ? 1 : 0);
     }
     let pendingImport = [];
     async function prepareImport(file) {
@@ -227,28 +334,33 @@
       if (rows.length < 2) throw new Error('檔案中沒有可匯入的待辦。');
       const headers = rows[0].map(value => value.trim()), column = Object.fromEntries(headers.map((name, index) => [name, index]));
       if (column['待辦'] === undefined) throw new Error('找不到「待辦」欄位，請使用 App 匯出的 CSV 格式。');
-      const usedIds = new Set(todos.map(t => String(t.id))); let nextId = Date.now();
+      const usedIds = new Set(todos.map(todo => String(todo.id))); let nextId = Date.now();
       const parsed = rows.slice(1).map((row, index) => {
-        const value = name => cleanCsvValue(row[column[name]] ?? '').trim(), text = value('待辦');
+        const value = name => column[name] === undefined ? '' : cleanCsvValue(row[column[name]] ?? '').trim();
+        const text = value('待辦');
         if (!text) return null;
         const rawId = value('ID'); let id = Number(rawId);
         if (!rawId || !Number.isFinite(id)) { while (usedIds.has(String(nextId))) nextId++; id = nextId++; }
         usedIds.add(String(id));
-        const date = value('日期'), status = value('狀態'), order = Number(value('排序'));
-        return {todo:{id, text, category:value('分類'), when:date.includes('明天') ? 'tomorrow' : 'today', done:['已完成','完成','true','1'].includes(status.toLowerCase())}, order:Number.isFinite(order) && order > 0 ? order : index + 1};
+        const rawLane = value('欄位');
+        const lane = lanes.find(item => item.label === rawLane || item.id === rawLane)?.id || 'today';
+        const legacyWhen = value('日期').includes('明天') ? 'tomorrow' : 'today';
+        const dueDate = parseImportedDate(value('到期日'), legacyWhen);
+        const status = value('狀態'), order = Number(value('排序'));
+        return {todo:normalizeTodo({id, text, category:value('分類'), lane, dueDate, done:['已完成','完成','true','1'].includes(status.toLowerCase())}), order:Number.isFinite(order) && order > 0 ? order : index + 1};
       }).filter(Boolean);
       if (!parsed.length) throw new Error('檔案中沒有可匯入的待辦。');
       const unique = new Map(); parsed.forEach(item => unique.set(String(item.todo.id), item));
       pendingImport = [...unique.values()].sort((a, b) => a.order - b.order);
       const done = pendingImport.filter(item => item.todo.done).length;
       document.querySelector('#importSummary').textContent = `共 ${pendingImport.length} 筆：未完成 ${pendingImport.length - done} 筆、已完成 ${done} 筆。請選擇合併目前清單，或以這份檔案全部取代。`;
-      document.querySelector('#importPreview').innerHTML = pendingImport.slice(0, 8).map(item => `<tr><td title="${escapeHTML(item.todo.text)}">${escapeHTML(item.todo.text)}</td><td>${escapeHTML(item.todo.category || '')}</td><td>${item.todo.when === 'tomorrow' ? '明天以後' : '今天'}</td><td>${item.todo.done ? '已完成' : '未完成'}</td></tr>`).join('');
+      document.querySelector('#importPreview').innerHTML = pendingImport.slice(0, 8).map(item => `<tr><td title="${escapeHTML(item.todo.text)}">${escapeHTML(item.todo.text)}</td><td>${laneLabel[item.todo.lane]}</td><td>${escapeHTML(item.todo.category)}</td><td>${item.todo.dueDate}</td><td>${item.todo.done ? '已完成' : '未完成'}</td></tr>`).join('');
       document.querySelector('#importDialog').showModal();
     }
     function applyImport(mode) {
       if (!pendingImport.length) return;
       const replaceCloud = mode === 'replace';
-      if (mode === 'replace') {
+      if (replaceCloud) {
         if (!confirm('確定要用匯入檔案取代目前全部待辦嗎？')) return;
         todos = pendingImport.map(item => item.todo);
       } else {
@@ -261,49 +373,201 @@
       pendingImport = []; document.querySelector('#importDialog').close(); save(); render();
       if (syncReady && currentUser) { syncStatus.textContent = '同步中…'; writeAllTodos(replaceCloud).catch(showSyncError); }
     }
-    document.querySelector('#taskForm').addEventListener('submit', e => { e.preventDefault(); const text = input.value.trim(), category = categoryInput.value.trim(); if (!text) return; const now = Date.now(), newTodo = { id:now * 1000 + Math.floor(Math.random() * 1000), text, category, done:false, when:'today' }; todos = [newTodo, ...todos]; input.value=''; categoryInput.value=''; save(); render(); persistTodo(newTodo, -now); input.focus(); });
-    input.addEventListener('keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); if (input.value.trim()) categoryInput.focus(); });
-    categoryInput.addEventListener('keydown', e => { if (e.key !== 'Enter') return; e.preventDefault(); document.querySelector('#taskForm').requestSubmit(); });
+
+    document.querySelector('#taskForm').addEventListener('submit', event => {
+      event.preventDefault();
+      const text = input.value.trim(), category = categoryInput.value.trim();
+      if (!text) return;
+      const now = Date.now(), newTodo = normalizeTodo({id:now * 1000 + Math.floor(Math.random() * 1000), text, category, done:false, lane:'today', dueDate:isoForOffset(0)});
+      todos = [newTodo, ...todos]; input.value = ''; categoryInput.value = ''; save(); render(); persistTodo(newTodo, -now); input.focus();
+    });
+    input.addEventListener('keydown', event => { if (event.key !== 'Enter') return; event.preventDefault(); if (input.value.trim()) categoryInput.focus(); });
+    categoryInput.addEventListener('keydown', event => { if (event.key !== 'Enter') return; event.preventDefault(); document.querySelector('#taskForm').requestSubmit(); });
     searchInput.addEventListener('input', render);
-    searchInput.addEventListener('keydown', e => { if (e.key !== 'Escape') return; searchInput.value = ''; render(); searchInput.blur(); });
-    list.addEventListener('change', e => { const id = +e.target.dataset.toggle; if (!id) return; todos = todos.map(t => t.id === id ? {...t, done:e.target.checked} : t); const changed = todos.find(t => t.id === id); save(); render(); if (changed) persistTodo(changed); });
+    searchInput.addEventListener('keydown', event => { if (event.key !== 'Escape') return; searchInput.value = ''; render(); searchInput.blur(); });
+    laneSwitcher.addEventListener('click', event => { const button = event.target.closest('[data-mobile-lane]'); if (!button) return; mobileLane = button.dataset.mobileLane; render(); });
+
+    board.addEventListener('change', event => {
+      const toggleId = Number(event.target.dataset.toggle);
+      if (toggleId) {
+        todos = todos.map(todo => todo.id === toggleId ? {...todo, done:event.target.checked} : todo);
+        const changed = todos.find(todo => todo.id === toggleId); save(); render(); if (changed) persistTodo(changed); return;
+      }
+    });
     function commitEditing(item) {
-      if (!item || +item.dataset.id !== editingId) return;
-      const original = todos.find(t => t.id === editingId), text = item.querySelector('.edit-task')?.value.trim();
+      if (!item || Number(item.dataset.id) !== editingId) return;
+      const original = todos.find(todo => todo.id === editingId), text = item.querySelector('.edit-task')?.value.trim();
       if (!original) return;
-      todos = todos.map(t => t.id === editingId ? {...t, text:text || original.text, category:item.querySelector('.edit-category')?.value.trim() || ''} : t);
-      const changed = todos.find(t => t.id === editingId);
+      todos = todos.map(todo => todo.id === editingId ? {...todo, text:text || original.text, category:item.querySelector('.edit-category')?.value.trim() || ''} : todo);
+      const changed = todos.find(todo => todo.id === editingId);
       editingId = null; save(); render(); if (changed) persistTodo(changed);
     }
-    list.addEventListener('click', e => {
-      const item = e.target.closest('li[data-id]'), id = item ? +item.dataset.id : 0;
+    board.addEventListener('click', event => {
+      const item = event.target.closest('.task-row[data-id]'), id = item ? Number(item.dataset.id) : 0;
       if (!id) return;
-      if (e.target.dataset.delete) { todos = todos.filter(t => t.id !== id); editingId = null; save(); render(); runCloud(() => deleteDoc(doc(sharedTodosRef, String(id)))); return; }
-      if (e.target.dataset.day) { if (editingId === id) commitEditing(item); todos = todos.map(t => t.id === id ? {...t, when:t.when === 'tomorrow' ? 'today' : 'tomorrow'} : t); const changed = todos.find(t => t.id === id); editingId = null; save(); render(); if (changed) persistTodo(changed); return; }
-      if (e.target.closest('.task-wrap') && !editingId) { editingId = id; render(); }
+      if (event.target.dataset.delete) { todos = todos.filter(todo => todo.id !== id); editingId = null; save(); render(); runCloud(() => deleteDoc(doc(sharedTodosRef, String(id)))); return; }
+      if (event.target.dataset.day) {
+        todos = todos.map(todo => todo.id === id ? {...todo, when:todo.when === 'tomorrow' ? 'today' : 'tomorrow', dueDate:isoForOffset(todo.when === 'tomorrow' ? 0 : 1)} : todo);
+        const changed = todos.find(todo => todo.id === id); save(); render(); if (changed) persistTodo(changed); return;
+      }
+      if (event.target.closest('.task-wrap') && !editingId) { editingId = id; render(); }
     });
-    list.addEventListener('keydown', e => { if (!e.target.matches('.edit-task,.edit-category') || e.key !== 'Enter') return; e.preventDefault(); if (e.target.matches('.edit-category')) e.target.closest('li').querySelector('.edit-task').focus(); else commitEditing(e.target.closest('li')); });
-    list.addEventListener('focusout', e => { if (!e.target.matches('.edit-task,.edit-category')) return; const item = e.target.closest('li'); setTimeout(() => { if (!item.contains(document.activeElement)) commitEditing(item); }, 0); });
-    let draggedId = null;
-    list.addEventListener('dragstart', e => { const item = e.target.closest('li[draggable]'); if (!item) return; draggedId = +item.dataset.id; item.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
-    list.addEventListener('dragover', e => { const item = e.target.closest('li[draggable]'); if (!item || +item.dataset.id === draggedId) return; e.preventDefault(); document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over')); item.classList.add('drag-over'); });
-    list.addEventListener('drop', e => { const item = e.target.closest('li[draggable]'); if (!item || +item.dataset.id === draggedId) return; e.preventDefault(); const from = todos.findIndex(t => t.id === draggedId), to = todos.findIndex(t => t.id === +item.dataset.id); if (from < 0 || to < 0) return; const targetWhen = todos[to].when || 'today', [moved] = todos.splice(from, 1); if (filter === 'active') moved.when = targetWhen; const insertAt = todos.findIndex(t => t.id === +item.dataset.id); todos.splice(insertAt < 0 ? todos.length : insertAt, 0, moved); save(); render(); persistTodo(moved); persistOrders(); });
-    list.addEventListener('dragend', () => { draggedId = null; document.querySelectorAll('.dragging,.drag-over').forEach(el => el.classList.remove('dragging','drag-over')); });
-    document.querySelector('.filters').addEventListener('click', e => { const button = e.target.closest('[data-filter]'); if (!button) return; filter = button.dataset.filter; document.querySelectorAll('.filter').forEach(b => b.classList.toggle('active', b === button)); render(); });
-    document.querySelector('#sortCategory').addEventListener('click', e => { todos = todos.map((todo, index) => ({todo, index})).sort((a, b) => { const ac = (a.todo.category || '').trim(), bc = (b.todo.category || '').trim(); if (!ac && !bc) return a.index - b.index; if (!ac) return 1; if (!bc) return -1; const compared = ac.localeCompare(bc, 'zh-Hant', {numeric:true, sensitivity:'base'}); return (categoryAscending ? compared : -compared) || a.index - b.index; }).map(item => item.todo); e.currentTarget.textContent = categoryAscending ? '分類 ↑' : '分類 ↓'; categoryAscending = !categoryAscending; editingId = null; save(); render(); persistOrders(); });
+    board.addEventListener('keydown', event => {
+      if (!event.target.matches('.edit-task,.edit-category') || event.key !== 'Enter') return;
+      event.preventDefault();
+      const item = event.target.closest('.task-row');
+      if (event.target.matches('.edit-task')) item.querySelector('.edit-category').focus(); else commitEditing(item);
+    });
+    board.addEventListener('focusout', event => {
+      if (!event.target.matches('.edit-task,.edit-category')) return;
+      const item = event.target.closest('.task-row');
+      setTimeout(() => { if (!item.contains(document.activeElement)) commitEditing(item); }, 0);
+    });
+
+    function clearDragStyles() {
+      document.querySelectorAll('.dragging,.drag-over,.drop-lane,.drop-target').forEach(element => element.classList.remove('dragging','drag-over','drop-lane','drop-target'));
+    }
+    function moveDraggedTodo(id, targetLane, targetId) {
+      const from = todos.findIndex(todo => todo.id === id);
+      if (from < 0 || !laneIds.has(targetLane)) return;
+      const originalLane = todos[from].lane;
+      if (targetId === id && originalLane === targetLane) return;
+      const [moved] = todos.splice(from, 1);
+      moved.lane = targetLane;
+      let insertAt = -1;
+      if (targetId) {
+        const targetIndex = todos.findIndex(todo => todo.id === targetId);
+        const target = todos[targetIndex];
+        if (target && target.lane === targetLane && target.when === moved.when) insertAt = targetIndex;
+      }
+      if (insertAt < 0) {
+        insertAt = todos.length;
+        todos.forEach((todo, index) => { if (todo.lane === targetLane && todo.when === moved.when) insertAt = index + 1; });
+      }
+      todos.splice(insertAt, 0, moved);
+      save(); render(); persistTodo(moved); persistOrders();
+    }
+    board.addEventListener('dragstart', event => {
+      const handle = event.target.closest('.drag[draggable="true"]'), item = handle?.closest('.task-row');
+      if (!item) return;
+      draggedId = Number(item.dataset.id); item.classList.add('dragging'); event.dataTransfer.effectAllowed = 'move'; event.dataTransfer.setData('text/plain', String(draggedId));
+    });
+    board.addEventListener('dragover', event => {
+      const lane = event.target.closest('.lane');
+      if (!lane || !draggedId) return;
+      event.preventDefault(); clearDragStyles();
+      const dragged = board.querySelector(`[data-id="${draggedId}"]`); dragged?.classList.add('dragging');
+      const row = event.target.closest('.task-row[data-id]');
+      if (row && Number(row.dataset.id) !== draggedId) row.classList.add('drag-over'); else lane.classList.add('drop-lane');
+    });
+    board.addEventListener('drop', event => {
+      const lane = event.target.closest('.lane');
+      if (!lane || !draggedId) return;
+      event.preventDefault();
+      const row = event.target.closest('.task-row[data-id]');
+      moveDraggedTodo(draggedId, lane.dataset.lane, row ? Number(row.dataset.id) : 0);
+      draggedId = null; clearDragStyles();
+    });
+    board.addEventListener('dragend', () => { draggedId = null; clearDragStyles(); });
+    laneSwitcher.addEventListener('dragover', event => {
+      const button = event.target.closest('[data-mobile-lane]');
+      if (!button || !draggedId) return;
+      event.preventDefault(); clearDragStyles(); button.classList.add('drop-target');
+    });
+    laneSwitcher.addEventListener('drop', event => {
+      const button = event.target.closest('[data-mobile-lane]');
+      if (!button || !draggedId) return;
+      event.preventDefault(); mobileLane = button.dataset.mobileLane; moveDraggedTodo(draggedId, mobileLane, 0); draggedId = null; clearDragStyles();
+    });
+
+    function positionTouchGhost(touch) {
+      if (!touchDrag?.ghost) return;
+      const width = touchDrag.ghost.offsetWidth;
+      touchDrag.ghost.style.left = `${Math.max(8, Math.min(innerWidth - width - 8, touch.clientX + 12))}px`;
+      touchDrag.ghost.style.top = `${Math.max(8, touch.clientY - 24)}px`;
+    }
+    function beginTouchDrag(item, touch) {
+      if (!touchDrag) return;
+      touchDrag.active = true; draggedId = Number(item.dataset.id); item.classList.add('dragging');
+      const ghost = item.cloneNode(true), rect = item.getBoundingClientRect();
+      ghost.classList.add('touch-ghost'); ghost.style.width = `${Math.min(rect.width, 360)}px`;
+      ghost.querySelectorAll('input,button').forEach(control => { control.disabled = true; });
+      document.body.appendChild(ghost); touchDrag.ghost = ghost; positionTouchGhost(touch);
+    }
+    function finishTouchDrag() {
+      clearTimeout(touchTimer);
+      if (touchDrag?.active && touchDrag.targetLane) {
+        mobileLane = touchDrag.targetLane;
+        moveDraggedTodo(touchDrag.id, touchDrag.targetLane, touchDrag.targetId || 0);
+      }
+      touchDrag?.ghost?.remove(); touchDrag = null; touchTimer = null; draggedId = null; clearDragStyles();
+    }
+    board.addEventListener('touchstart', event => {
+      const handle = event.target.closest('.drag[draggable="true"]'), item = handle?.closest('.task-row');
+      if (!item || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      touchDrag = {id:Number(item.dataset.id), startX:touch.clientX, startY:touch.clientY, active:false, ghost:null, targetLane:null, targetId:0};
+      touchTimer = setTimeout(() => beginTouchDrag(item, touch), 280);
+    }, {passive:true});
+    board.addEventListener('touchmove', event => {
+      if (!touchDrag || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      if (!touchDrag.active) {
+        if (Math.hypot(touch.clientX - touchDrag.startX, touch.clientY - touchDrag.startY) > 9) {
+          clearTimeout(touchTimer); touchTimer = null; touchDrag = null;
+        }
+        return;
+      }
+      if (event.cancelable) event.preventDefault();
+      positionTouchGhost(touch);
+      document.querySelectorAll('.drag-over,.drop-lane,.drop-target').forEach(element => element.classList.remove('drag-over','drop-lane','drop-target'));
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      const button = target?.closest('[data-mobile-lane]'), row = target?.closest('.task-row[data-id]'), lane = target?.closest('.lane');
+      if (button) {
+        touchDrag.targetLane = button.dataset.mobileLane; touchDrag.targetId = 0; button.classList.add('drop-target');
+      } else if (row && Number(row.dataset.id) !== touchDrag.id) {
+        touchDrag.targetLane = row.dataset.lane; touchDrag.targetId = Number(row.dataset.id); row.classList.add('drag-over');
+      } else if (lane) {
+        touchDrag.targetLane = lane.dataset.lane; touchDrag.targetId = 0; lane.classList.add('drop-lane');
+      } else {
+        touchDrag.targetLane = null; touchDrag.targetId = 0;
+      }
+    }, {passive:false});
+    board.addEventListener('touchend', finishTouchDrag);
+    board.addEventListener('touchcancel', finishTouchDrag);
+    board.addEventListener('contextmenu', event => { if (event.target.closest('.drag')) event.preventDefault(); });
+
+    document.querySelector('.filters').addEventListener('click', event => {
+      const button = event.target.closest('[data-filter]'); if (!button) return;
+      filter = button.dataset.filter; document.querySelectorAll('.filter').forEach(item => item.classList.toggle('active', item === button)); render();
+    });
+    document.querySelector('#sortCategory').addEventListener('click', event => {
+      const laneOrder = Object.fromEntries(lanes.map((lane, index) => [lane.id, index]));
+      const direction = categoryAscending ? 1 : -1;
+      todos = todos.map((todo, index) => ({todo, index})).sort((a, b) => {
+        const laneCompared = laneOrder[a.todo.lane] - laneOrder[b.todo.lane]; if (laneCompared) return laneCompared;
+        const whenCompared = (a.todo.when === 'tomorrow') - (b.todo.when === 'tomorrow'); if (whenCompared) return whenCompared;
+        const ac = a.todo.category.trim(), bc = b.todo.category.trim();
+        if (!ac && !bc) return a.index - b.index; if (!ac) return 1; if (!bc) return -1;
+        return direction * ac.localeCompare(bc, 'zh-Hant', {numeric:true, sensitivity:'base'}) || a.index - b.index;
+      }).map(item => item.todo);
+      event.currentTarget.textContent = categoryAscending ? '分類 ↑' : '分類 ↓'; categoryAscending = !categoryAscending; editingId = null; save(); render(); persistOrders();
+    });
     document.querySelector('#exportCsv').addEventListener('click', exportCSV);
     document.querySelector('#importCsv').addEventListener('click', () => { const picker = document.querySelector('#importFile'); picker.value = ''; picker.click(); });
-    document.querySelector('#importFile').addEventListener('change', async e => { const file = e.target.files[0]; if (!file) return; try { await prepareImport(file); } catch (error) { alert(error.message || '無法讀取這份 CSV。'); } });
+    document.querySelector('#importFile').addEventListener('change', async event => { const file = event.target.files[0]; if (!file) return; try { await prepareImport(file); } catch (error) { alert(error.message || '無法讀取這份 CSV。'); } });
     document.querySelector('#importMerge').addEventListener('click', () => applyImport('merge'));
     document.querySelector('#importReplace').addEventListener('click', () => applyImport('replace'));
     document.querySelector('#importCancel').addEventListener('click', () => { pendingImport = []; document.querySelector('#importDialog').close(); });
-    document.querySelector('#clear').addEventListener('click', () => { const removedIds = todos.filter(t => t.done).map(t => t.id); todos = todos.filter(t => !t.done); save(); render(); if (syncReady && currentUser && removedIds.length) { const batch = writeBatch(db); removedIds.forEach(id => batch.delete(doc(sharedTodosRef, String(id)))); runCloud(() => batch.commit()); } });
+    document.querySelector('#clear').addEventListener('click', () => {
+      const removedIds = todos.filter(todo => todo.done).map(todo => todo.id);
+      todos = todos.filter(todo => !todo.done); save(); render();
+      if (syncReady && currentUser && removedIds.length) { const batch = writeBatch(db); removedIds.forEach(id => batch.delete(doc(sharedTodosRef, String(id)))); runCloud(() => batch.commit()); }
+    });
     onAuthStateChanged(auth, user => {
       if (user) { connectCloud(user).catch(showSyncError); return; }
       if (stopCloudListener) { stopCloudListener(); stopCloudListener = null; }
-      currentUser = null; syncReady = false; cloudTodoIds = new Set();
-      syncStatus.textContent = '連線中…';
-      signInAnonymously(auth).catch(showSyncError);
+      currentUser = null; syncReady = false; cloudTodoIds = new Set(); syncStatus.textContent = '連線中…'; signInAnonymously(auth).catch(showSyncError);
     });
     render();
   </script>
